@@ -156,22 +156,33 @@ textarea { font-family: var(--font); resize: none; }
 
 .sidebar-tabs {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 .tab-btn {
-  flex: 1;
-  padding: 10px;
-  background: none;
-  border: none;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
-  transition: color 0.2s, border-bottom 0.2s;
-  border-bottom: 2px solid transparent;
+  text-align: left;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
-.tab-btn.active { color: var(--accent-light); border-bottom-color: var(--accent); }
-.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  border-color: var(--accent);
+}
+.tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
 
 .tab-panel { display: none; flex: 1; overflow-y: auto; }
 .tab-panel.active { display: flex; flex-direction: column; }
@@ -365,6 +376,21 @@ textarea { font-family: var(--font); resize: none; }
   flex-shrink: 0;
   animation: slideUp 0.2s ease;
 }
+.sidebar-feedback-panel {
+  background: transparent;
+  border-top: none;
+  padding: 12px;
+  min-height: 100%;
+}
+.feedback-empty-state {
+  display: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 18px 4px;
+}
+.feedback-empty .feedback-empty-state { display: block; }
+.feedback-empty .feedback-form { display: none; }
 @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 500; }
@@ -393,6 +419,21 @@ textarea { font-family: var(--font); resize: none; }
 
 .feedback-status { font-size: 12px; margin-top: 6px; color: var(--green); }
 .feedback-status.error { color: var(--red); }
+
+.sidebar-feedback-panel .feedback-row {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.sidebar-feedback-panel .feedback-row label { min-width: 0; }
+.sidebar-feedback-panel .btn-group { width: 100%; }
+.sidebar-feedback-panel .toggle-btn {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+  padding: 7px 8px;
+}
+.sidebar-feedback-panel .btn-submit-feedback { width: 100%; margin-top: 2px; }
 
 /* ── Input Area ────────────────────────────────────────────────────────── */
 .input-area {

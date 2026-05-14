@@ -100,6 +100,59 @@ const api = {
    UI MODULE — DOM helpers
    ═══════════════════════════════════════════════════════════════════════ */
 const ui = {
+  /** Move analytics/feedback into separate left-side sidebar panels. */
+  prepareSidebarPanels() {
+    const tabs = document.querySelector('.sidebar-tabs');
+    const analyticsPanel = document.getElementById('tab-analytics');
+    const existingFeedback = document.getElementById('feedback-panel');
+
+    if (tabs && !tabs.querySelector('[data-tab="feedback"]')) {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn';
+      btn.dataset.tab = 'feedback';
+      btn.textContent = 'Feedback';
+      tabs.appendChild(btn);
+    }
+
+    if (analyticsPanel && existingFeedback && !document.getElementById('tab-feedback')) {
+      const feedbackTab = document.createElement('div');
+      feedbackTab.className = 'tab-panel';
+      feedbackTab.id = 'tab-feedback';
+      analyticsPanel.insertAdjacentElement('afterend', feedbackTab);
+
+      existingFeedback.removeAttribute('style');
+      existingFeedback.classList.add('sidebar-feedback-panel', 'feedback-empty');
+      feedbackTab.appendChild(existingFeedback);
+
+      const headerText = existingFeedback.querySelector('.feedback-header span');
+      if (headerText) headerText.textContent = 'Rate response';
+
+      const emptyState = document.createElement('div');
+      emptyState.className = 'feedback-empty-state';
+      emptyState.id = 'feedback-empty-state';
+      emptyState.textContent = 'Select Rate under an assistant message.';
+      existingFeedback.insertBefore(emptyState, existingFeedback.children[1] || null);
+
+      const form = document.createElement('div');
+      form.className = 'feedback-form';
+      while (emptyState.nextSibling) {
+        form.appendChild(emptyState.nextSibling);
+      }
+      existingFeedback.appendChild(form);
+    }
+  },
+
+  /** Activate one sidebar panel by name. */
+  switchSidebarTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === `tab-${tabName}`);
+    });
+    if (tabName === 'analytics') analytics.load();
+  },
+
   /** Format an ISO timestamp to HH:MM */
   formatTime(iso) {
     if (!iso) return '';
@@ -266,13 +319,13 @@ const feedback = {
     document.getElementById('feedback-status').textContent = '';
     document.getElementById('feedback-status').className = 'feedback-status';
 
-    document.getElementById('feedback-panel').style.display = 'block';
-    document.getElementById('feedback-panel').scrollIntoView({ behavior: 'smooth', block: 'end' });
+    document.getElementById('feedback-panel').classList.remove('feedback-empty');
+    ui.switchSidebarTab('feedback');
   },
 
   /** Close the feedback panel */
   close() {
-    document.getElementById('feedback-panel').style.display = 'none';
+    document.getElementById('feedback-panel').classList.add('feedback-empty');
     feedback.currentMessageId = null;
   },
 
@@ -396,6 +449,7 @@ const app = {
 
   /** Called on page load — wire up all events and load initial data */
   async init() {
+    ui.prepareSidebarPanels();
     app.bindEvents();
     await app.loadSessions();
     await app.checkConnection();
@@ -427,11 +481,7 @@ const app = {
     // Tab switching (Chats / Analytics)
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        if (btn.dataset.tab === 'analytics') analytics.load();
+        ui.switchSidebarTab(btn.dataset.tab);
       });
     });
 
