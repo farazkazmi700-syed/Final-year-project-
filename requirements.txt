@@ -1,0 +1,29 @@
+# ============================================================
+#  Multi-Turn AI Chatbot — Python Dependencies
+#  Install: pip install -r requirements.txt
+# ============================================================
+
+# ── Web Framework ────────────────────────────────────────────
+flask==3.0.3
+flask-cors==4.0.1          # Allow frontend to call backend from different origin
+
+# ── Groq API Client (LLaMA 3) ───────────────────────────────
+groq==0.9.0                # Official Groq Python SDK
+
+# ── Authentication ───────────────────────────────────────────
+authlib==1.3.1             # Google OAuth 2.0
+requests==2.32.3           # HTTP calls to Google APIs
+pyjwt==2.8.0               # JWT token signing/verification
+
+# ── Analytics & Graphs ──────────────────────────────────────
+pandas==2.2.2              # Data processing
+matplotlib==3.9.0          # Graph generation (bar, pie charts)
+seaborn==0.13.2            # Prettier statistical charts
+scikit-learn==1.5.0        # Topic classification (optional phase)
+
+# ── Utilities ────────────────────────────────────────────────
+python-dotenv==1.0.1       # Load .env file
+itsdangerous==2.2.0        # Secure cookie signing
+
+# ── Google Colab / Tunnel (optional) ────────────────────────
+pyngrok==7.2.0             # Create public URL tunnel for Colab

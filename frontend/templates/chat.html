@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LLaMA 3 Chatbot</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="chat-body">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SIDEBAR — Session list + user profile
+══════════════════════════════════════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- App header -->
+  <div class="sidebar-header">
+    <div class="sidebar-logo">🤖 <span>LLaMA 3</span></div>
+    <button class="btn-icon" id="btn-new-chat" title="New Chat">＋</button>
+  </div>
+
+  <!-- Tab switcher: Chats | Analytics -->
+  <div class="sidebar-tabs">
+    <button class="tab-btn active" data-tab="chats">💬 Chats</button>
+    <button class="tab-btn"        data-tab="analytics">📊 Analytics</button>
+  </div>
+
+  <!-- ── Chats tab ──────────────────────────────────────────────────── -->
+  <div class="tab-panel active" id="tab-chats">
+    <div class="session-list" id="session-list">
+      <div class="empty-sessions">No chats yet. Start a new one!</div>
+    </div>
+  </div>
+
+  <!-- ── Analytics tab ─────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-analytics">
+    <div class="analytics-panel" id="analytics-panel">
+      <div class="loading-spinner">Loading analytics...</div>
+    </div>
+  </div>
+
+  <!-- User profile at bottom of sidebar -->
+  <div class="sidebar-footer">
+    <div class="user-profile">
+      <img class="user-avatar" id="user-avatar"
+           src="{{ user.get('picture', '') or 'https://ui-avatars.com/api/?name=User&background=7c6af7&color=fff' }}"
+           alt="Profile" />
+      <div class="user-info">
+        <span class="user-name">{{ user.get('name', 'User') }}</span>
+        <span class="user-email">{{ user.get('email', '') }}</span>
+      </div>
+    </div>
+    <a href="/auth/logout" class="btn-logout" title="Logout">⏏</a>
+  </div>
+
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN CHAT AREA
+══════════════════════════════════════════════════════════════════════════════ -->
+<main class="chat-main">
+
+  <!-- Header bar -->
+  <header class="chat-header">
+    <button class="btn-icon" id="btn-sidebar-toggle" title="Toggle sidebar">☰</button>
+    <div class="chat-title">
+      <span id="current-session-title">New Chat</span>
+      <span class="model-badge">llama3-8b · Groq</span>
+    </div>
+    <div class="connection-status" id="connection-status" title="AI connection status">
+      <span class="status-dot"></span>
+      <span class="status-text">Checking...</span>
+    </div>
+  </header>
+
+  <!-- ── Messages area ──────────────────────────────────────────────── -->
+  <div class="messages-container" id="messages-container">
+    <!-- Welcome message shown before first chat -->
+    <div class="welcome-message" id="welcome-message">
+      <div class="welcome-icon">🤖</div>
+      <h2>Hello, {{ user.get('name', 'there') }}!</h2>
+      <p>I'm <strong>LLaMA 3</strong>, your AI assistant.<br>Ask me anything — I remember our conversation.</p>
+      <div class="suggestion-chips">
+        <button class="chip" onclick="app.sendSuggestion('Explain quantum computing in simple terms')">Quantum computing</button>
+        <button class="chip" onclick="app.sendSuggestion('Write a Python function to sort a list')">Python help</button>
+        <button class="chip" onclick="app.sendSuggestion('What are 5 tips for productive studying?')">Study tips</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Feedback panel (appears below the last AI message) ─────────── -->
+  <div class="feedback-panel" id="feedback-panel" style="display:none;">
+    <div class="feedback-header">
+      <span>Rate this response</span>
+      <button class="btn-icon btn-close-feedback" id="btn-close-feedback">✕</button>
+    </div>
+
+    <!-- Star rating -->
+    <div class="feedback-row">
+      <label>Rating:</label>
+      <div class="star-rating" id="star-rating">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+    </div>
+
+    <!-- Correctness -->
+    <div class="feedback-row">
+      <label>Correctness:</label>
+      <div class="btn-group" id="correctness-group">
+        <button class="toggle-btn" data-value="correct">✅ Correct</button>
+        <button class="toggle-btn" data-value="partially_correct">⚠️ Partial</button>
+        <button class="toggle-btn" data-value="incorrect">❌ Wrong</button>
+      </div>
+    </div>
+
+    <!-- Length -->
+    <div class="feedback-row">
+      <label>Length:</label>
+      <div class="btn-group" id="length-group">
+        <button class="toggle-btn" data-value="too_short">Too Short</button>
+        <button class="toggle-btn" data-value="just_right">Just Right</button>
+        <button class="toggle-btn" data-value="too_long">Too Long</button>
+      </div>
+    </div>
+
+    <!-- Optional comment -->
+    <div class="feedback-row">
+      <textarea id="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
+    </div>
+
+    <button class="btn-primary btn-submit-feedback" id="btn-submit-feedback">
+      Submit Feedback
+    </button>
+    <div class="feedback-status" id="feedback-status"></div>
+  </div>
+
+  <!-- ── Message input bar ────────────────────────────────────────────── -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea
+        id="message-input"
+        placeholder="Message LLaMA 3... (Enter to send, Shift+Enter for newline)"
+        rows="1"
+        maxlength="4000"
+      ></textarea>
+      <button class="btn-send" id="btn-send" title="Send message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint">LLaMA 3 via Groq API · Responses may not always be accurate</p>
+  </div>
+
+</main>
+
+<!-- Hidden data passed from Flask to JS -->
+<script>
+  window.CURRENT_USER = {
+    name:  "{{ user.get('name', '') | e }}",
+    email: "{{ user.get('email', '') | e }}",
+  };
+</script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
