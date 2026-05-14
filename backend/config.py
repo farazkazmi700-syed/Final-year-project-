@@ -13,7 +13,7 @@ class Config:
 
     # ── Groq API ──────────────────────────────────────────────────────────────
     GROQ_API_KEY: str = os.getenv('GROQ_API_KEY', '')
-    GROQ_MODEL: str = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
+    GROQ_MODEL: str = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
 
     # ── Google OAuth ──────────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')

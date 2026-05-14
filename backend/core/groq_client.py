@@ -16,8 +16,10 @@ Setup:
   3. Add GROQ_API_KEY=gsk_... to your .env file
 """
 
-from groq import Groq
 from typing import List, Dict
+
+import requests
+
 from backend.config import Config
 
 
@@ -30,24 +32,36 @@ SYSTEM_PROMPT = (
     "Keep your responses focused and easy to understand."
 )
 
-# ── Groq Client (created once, reused) ───────────────────────────────────────
-_client: Groq = None
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
-def _get_client() -> Groq:
-    """
-    Lazy-initialize the Groq client.
-    Returns a shared instance (singleton pattern).
-    """
-    global _client
-    if _client is None:
-        if not Config.GROQ_API_KEY:
-            raise ValueError(
-                "GROQ_API_KEY is not set. "
-                "Get a free key at https://console.groq.com and add it to .env"
-            )
-        _client = Groq(api_key=Config.GROQ_API_KEY)
-    return _client
+MODEL_ALIASES = {
+    # Older Groq model IDs can be unavailable on some accounts.
+    # Keep the app working when an old .env is still present.
+    "llama3-8b-8192": "llama-3.1-8b-instant",
+    "llama3-70b-8192": "llama-3.3-70b-versatile",
+    "mixtral-8x7b-32768": "llama-3.1-8b-instant",
+}
+
+
+def _configured_model() -> str:
+    """Return a current Groq model ID, accepting old project defaults."""
+    model = (Config.GROQ_MODEL or "").strip()
+    return MODEL_ALIASES.get(model, model or "llama-3.1-8b-instant")
+
+
+def _auth_headers() -> Dict[str, str]:
+    """Build headers for Groq's OpenAI-compatible REST API."""
+    if not Config.GROQ_API_KEY:
+        raise ValueError(
+            "GROQ_API_KEY is not set. "
+            "Get a free key at https://console.groq.com and add it to .env"
+        )
+
+    return {
+        "Authorization": f"Bearer {Config.GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
 
 def generate_response(
@@ -73,21 +87,26 @@ def generate_response(
         ValueError:    If GROQ_API_KEY is missing.
         RuntimeError:  If the API call fails.
     """
-    client = _get_client()
-
     # Prepend the system prompt to give the model its persona
     messages = [{"role": "system", "content": system_prompt}] + conversation_history
 
     try:
-        response = client.chat.completions.create(
-            model=Config.GROQ_MODEL,
-            messages=messages,
-            max_tokens=1024,        # Max length of the response
-            temperature=0.7,        # 0=deterministic, 1=creative
-            top_p=0.9,
-            stream=False,
+        response = requests.post(
+            GROQ_CHAT_COMPLETIONS_URL,
+            headers=_auth_headers(),
+            json={
+                "model": _configured_model(),
+                "messages": messages,
+                "max_tokens": 1024,        # Max length of the response
+                "temperature": 0.7,        # 0=deterministic, 1=creative
+                "top_p": 0.9,
+                "stream": False,
+            },
+            timeout=30,
         )
-        return response.choices[0].message.content
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
     except Exception as e:
         error_msg = str(e)
@@ -102,10 +121,14 @@ def generate_response(
                 "Groq rate limit reached. Please wait a moment and try again. "
                 "(Free tier: 30 requests/minute)"
             )
-        if "model_not_found" in error_msg.lower():
+        if (
+            "model_not_found" in error_msg.lower()
+            or "decommissioned" in error_msg.lower()
+            or "not found" in error_msg.lower()
+        ):
             raise RuntimeError(
-                f"Model '{Config.GROQ_MODEL}' not found. "
-                "Try changing GROQ_MODEL to 'llama3-8b-8192' in .env"
+                f"Groq model '{Config.GROQ_MODEL}' is unavailable. "
+                "Set GROQ_MODEL=llama-3.1-8b-instant in your .env file."
             )
         raise RuntimeError(f"Groq API error: {error_msg}")
 
@@ -122,6 +145,6 @@ def check_groq_connection() -> dict:
         response = generate_response(
             [{"role": "user", "content": "Reply with only the word: OK"}]
         )
-        return {"status": "ok", "model": Config.GROQ_MODEL, "test_response": response}
+        return {"status": "ok", "model": _configured_model(), "test_response": response}
     except Exception as e:
         return {"status": "error", "message": str(e)}
