@@ -54,13 +54,17 @@ def create_app() -> Flask:
     # ── FR1: Initialize SQLite database (creates tables if not exist) ─────────
     print("[INIT] Setting up SQLite database...")
     init_db()
-    print("[INIT] ✅ Database ready")
+    print("[INIT] Database ready")
 
     # ── FR1: Register all route blueprints (FR3, FR5) ─────────────────────────
     app.register_blueprint(auth_bp)        # /auth/*
     app.register_blueprint(chat_bp)        # /chat/*
     app.register_blueprint(feedback_bp)    # /feedback/*
     app.register_blueprint(analytics_bp)   # /analytics/*
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return '', 204
 
     # ── Root redirect ─────────────────────────────────────────────────────────
     @app.route('/')
@@ -69,9 +73,9 @@ def create_app() -> Flask:
         return redirect(url_for('auth.login_page'))
 
     # ── Startup log ───────────────────────────────────────────────────────────
-    print("[INIT] ✅ All modules initialized")
-    print(f"[INIT] 🚀 Groq model: {Config.GROQ_MODEL}")
-    print(f"[INIT] 📁 Database:   {Config.DATABASE_PATH}")
+    print("[INIT] All modules initialized")
+    print(f"[INIT] Groq model: {Config.GROQ_MODEL}")
+    print(f"[INIT] Database:   {Config.DATABASE_PATH}")
 
     return app
 

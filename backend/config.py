@@ -47,6 +47,6 @@ class Config:
     def validate(cls):
         """Warn about missing required keys at startup."""
         if not cls.GROQ_API_KEY:
-            print("⚠️  WARNING: GROQ_API_KEY is not set. Chat will return error responses.")
+            print("WARNING: GROQ_API_KEY is not set. Chat will return error responses.")
         if not cls.GOOGLE_CLIENT_ID:
-            print("⚠️  WARNING: GOOGLE_CLIENT_ID is not set. OAuth login won't work.")
+            print("WARNING: GOOGLE_CLIENT_ID is not set. OAuth login won't work.")

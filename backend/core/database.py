@@ -140,4 +140,4 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_message ON feedback(message_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_logout_feedback_user ON logout_feedback(user_id)")
 
-    print(f"[DB] ✅ SQLite database initialized at: {Config.DATABASE_PATH}")
+    print(f"[DB] SQLite database initialized at: {Config.DATABASE_PATH}")
