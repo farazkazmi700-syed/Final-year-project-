@@ -28,10 +28,14 @@ class Config:
     APP_PORT: int = int(os.getenv('APP_PORT', '5000'))
 
     # ── SQLite Database ───────────────────────────────────────────────────────
-    # Resolve relative path from this file's location → project root
-    _raw_db_path: str = os.getenv('DATABASE_PATH', '../chatbot.db')
-    DATABASE_PATH: str = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', _raw_db_path.lstrip('../'))
+    # Resolve relative paths from the project root; Vercel writes only to /tmp.
+    _default_db_path: str = '/tmp/chatbot.db' if os.getenv('VERCEL') else '../chatbot.db'
+    _raw_db_path: str = os.getenv('DATABASE_PATH', _default_db_path)
+    _relative_db_path: str = _raw_db_path[3:] if _raw_db_path.startswith('../') else _raw_db_path
+    DATABASE_PATH: str = (
+        os.path.abspath(_raw_db_path)
+        if os.path.isabs(_raw_db_path)
+        else os.path.abspath(os.path.join(os.path.dirname(__file__), '..', _relative_db_path))
     )
 
     # ── Analytics ────────────────────────────────────────────────────────────

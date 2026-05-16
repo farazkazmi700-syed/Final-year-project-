@@ -25,6 +25,7 @@ const analyticsPage = {
       }
 
       container.innerHTML = analyticsPage.render(statsData, graphsData, feedbackData);
+      analyticsPage.renderTopicPlot(graphsData.topic_plot);
     } catch (err) {
       container.innerHTML = `<div class="loading-spinner">❌ ${err.message}</div>`;
       console.error('Analytics page error:', err);
@@ -42,6 +43,27 @@ const analyticsPage = {
       ? 'server returned an HTML error page'
       : text.slice(0, 120);
     throw new Error(`Failed to load ${label}: ${detail}`);
+  },
+
+  renderTopicPlot(plotData) {
+    const target = document.getElementById('topic-plot');
+    if (!target || !plotData) return;
+
+    if (!window.Plotly) {
+      target.innerHTML = '<div class="feedback-empty">Interactive topic chart is unavailable.</div>';
+      return;
+    }
+
+    window.Plotly.newPlot(target, plotData.data, plotData.layout, {
+      displayModeBar: false,
+      responsive: true,
+    });
+  },
+
+  escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
   },
 
   render(stats, graphs, feedbackData) {
@@ -65,6 +87,11 @@ const analyticsPage = {
           <div class="stat-value">${stats.avg_rating ?? '—'} ⭐</div>
           <div class="stat-sub">${stats.total_feedback || 0} feedback entries</div>
         </div>
+        <div class="stat-card">
+          <h4>Top Topic</h4>
+          <div class="stat-value stat-value-text">${analyticsPage.escapeHtml(stats.top_topic || 'No topic data')}</div>
+          <div class="stat-sub">${stats.avg_messages_per_session || 0} avg messages per session</div>
+        </div>
 
         <div class="analytics-charts">
           <div>
@@ -78,6 +105,10 @@ const analyticsPage = {
           <div>
             <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Rating Distribution</p>
             <img class="chart-img" src="${graphs.rating_dist}" alt="Rating Distribution" />
+          </div>
+          <div class="plotly-card">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Topic Classification</p>
+            <div id="topic-plot" class="topic-plot"></div>
           </div>
         </div>
       </div>
@@ -99,20 +130,24 @@ const analyticsPage = {
   },
 
   renderMessageFeedback(entry) {
+    const comment = entry.comment ? analyticsPage.escapeHtml(entry.comment) : '<em>No comment</em>';
+
     return `
       <div class="feedback-row">
         <div class="feedback-meta"><strong>${entry.rating} ⭐</strong> • ${entry.correctness.replace('_', ' ')} • ${entry.length_rating.replace('_', ' ')}</div>
-        <div class="feedback-text">${entry.comment ? entry.comment : '<em>No comment</em>'}</div>
+        <div class="feedback-text">${comment}</div>
         <div class="feedback-ts">${new Date(entry.submitted_at).toLocaleString()}</div>
       </div>
     `;
   },
 
   renderLogoutFeedback(entry) {
+    const comment = entry.comment ? analyticsPage.escapeHtml(entry.comment) : '<em>No comment</em>';
+
     return `
       <div class="feedback-row">
         <div class="feedback-meta"><strong>${entry.rating} ⭐</strong></div>
-        <div class="feedback-text">${entry.comment ? entry.comment : '<em>No comment</em>'}</div>
+        <div class="feedback-text">${comment}</div>
         <div class="feedback-ts">${new Date(entry.submitted_at).toLocaleString()}</div>
       </div>
     `;

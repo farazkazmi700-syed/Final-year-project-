@@ -19,11 +19,13 @@ pyjwt==2.8.0               # JWT token signing/verification
 pandas==2.2.2              # Data processing
 matplotlib==3.9.0          # Graph generation (bar, pie charts)
 seaborn==0.13.2            # Prettier statistical charts
+plotly==5.24.1             # Interactive visual analytics
 scikit-learn==1.5.0        # Topic classification (optional phase)
 
 # ── Utilities ────────────────────────────────────────────────
 python-dotenv==1.0.1       # Load .env file
 itsdangerous==2.2.0        # Secure cookie signing
+gunicorn==22.0.0           # Production WSGI server for Flask hosting
 
 # ── Google Colab / Tunnel (optional) ────────────────────────
 pyngrok==7.2.0             # Create public URL tunnel for Colab

@@ -18,6 +18,7 @@ from backend.services.analytics_service import (
     generate_daily_activity_chart,
     generate_correctness_pie_chart,
     generate_rating_distribution_chart,
+    generate_topic_distribution_plot,
 )
 
 analytics_bp = Blueprint('analytics', __name__, url_prefix='/analytics')
@@ -71,6 +72,7 @@ def get_graphs():
             'daily_activity': generate_daily_activity_chart(user['sub']),
             'correctness_pie': generate_correctness_pie_chart(user['sub']),
             'rating_dist': generate_rating_distribution_chart(user['sub']),
+            'topic_plot': generate_topic_distribution_plot(user['sub']),
         }
         return jsonify(graphs)
     except Exception as e:

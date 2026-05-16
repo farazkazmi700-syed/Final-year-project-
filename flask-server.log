@@ -1,0 +1,8 @@
+[INIT] Setting up SQLite database...
+[DB] ✅ SQLite database initialized at: D:\Smester 7th\1. Faraz\clone of phase 1\Final-year-project-\chatbot.db
+[INIT] ✅ Database ready
+[INIT] ✅ All modules initialized
+[INIT] 🚀 Groq model: llama-3.1-8b-instant
+[INIT] 📁 Database:   D:\Smester 7th\1. Faraz\clone of phase 1\Final-year-project-\chatbot.db
+ * Serving Flask app 'backend.app'
+ * Debug mode: off
