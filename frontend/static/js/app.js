@@ -75,6 +75,20 @@ const api = {
     return res.json();
   },
 
+  async submitLogoutFeedback(payload) {
+    const res = await fetch('/feedback/logout', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Logout feedback failed');
+    }
+    return res.json();
+  },
+
   /** GET /analytics/stats — aggregated usage statistics */
   async getStats() {
     const res = await fetch('/analytics/stats', { credentials: 'include' });
@@ -100,46 +114,9 @@ const api = {
    UI MODULE — DOM helpers
    ═══════════════════════════════════════════════════════════════════════ */
 const ui = {
-  /** Move analytics/feedback into separate left-side sidebar panels. */
+  /** Feedback is now handled on a separate full page. */
   prepareSidebarPanels() {
-    const tabs = document.querySelector('.sidebar-tabs');
-    const analyticsPanel = document.getElementById('tab-analytics');
-    const existingFeedback = document.getElementById('feedback-panel');
-
-    if (tabs && !tabs.querySelector('[data-tab="feedback"]')) {
-      const btn = document.createElement('button');
-      btn.className = 'tab-btn';
-      btn.dataset.tab = 'feedback';
-      btn.textContent = 'Feedback';
-      tabs.appendChild(btn);
-    }
-
-    if (analyticsPanel && existingFeedback && !document.getElementById('tab-feedback')) {
-      const feedbackTab = document.createElement('div');
-      feedbackTab.className = 'tab-panel';
-      feedbackTab.id = 'tab-feedback';
-      analyticsPanel.insertAdjacentElement('afterend', feedbackTab);
-
-      existingFeedback.removeAttribute('style');
-      existingFeedback.classList.add('sidebar-feedback-panel', 'feedback-empty');
-      feedbackTab.appendChild(existingFeedback);
-
-      const headerText = existingFeedback.querySelector('.feedback-header span');
-      if (headerText) headerText.textContent = 'Rate response';
-
-      const emptyState = document.createElement('div');
-      emptyState.className = 'feedback-empty-state';
-      emptyState.id = 'feedback-empty-state';
-      emptyState.textContent = 'Select Rate under an assistant message.';
-      existingFeedback.insertBefore(emptyState, existingFeedback.children[1] || null);
-
-      const form = document.createElement('div');
-      form.className = 'feedback-form';
-      while (emptyState.nextSibling) {
-        form.appendChild(emptyState.nextSibling);
-      }
-      existingFeedback.appendChild(form);
-    }
+    // No sidebar feedback tab is required.
   },
 
   /** Activate one sidebar panel by name. */
@@ -300,82 +277,10 @@ const ui = {
    FR2: Feedback panel (rating, correctness, length type)
    ═══════════════════════════════════════════════════════════════════════ */
 const feedback = {
-  currentMessageId: null,
-  selectedRating:      0,
-  selectedCorrectness: null,
-  selectedLength:      null,
-
-  /** Open the feedback panel for a specific AI message */
+  /** Open the feedback page for a specific AI message */
   open(messageId) {
-    feedback.currentMessageId = messageId;
-    feedback.selectedRating      = 0;
-    feedback.selectedCorrectness = null;
-    feedback.selectedLength      = null;
-
-    // Reset UI
-    document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
-    document.getElementById('feedback-comment').value = '';
-    document.getElementById('feedback-status').textContent = '';
-    document.getElementById('feedback-status').className = 'feedback-status';
-
-    document.getElementById('feedback-panel').classList.remove('feedback-empty');
-    ui.switchSidebarTab('feedback');
-  },
-
-  /** Close the feedback panel */
-  close() {
-    document.getElementById('feedback-panel').classList.add('feedback-empty');
-    feedback.currentMessageId = null;
-  },
-
-  /** Set the star rating (1–5) */
-  setRating(value) {
-    feedback.selectedRating = value;
-    document.querySelectorAll('.star').forEach(s => {
-      s.classList.toggle('active', parseInt(s.dataset.value) <= value);
-    });
-  },
-
-  /** Submit feedback to the backend */
-  async submit() {
-    const statusEl = document.getElementById('feedback-status');
-
-    // Validate
-    if (!feedback.selectedRating) {
-      statusEl.textContent = 'Please select a star rating.';
-      statusEl.className = 'feedback-status error';
-      return;
-    }
-    if (!feedback.selectedCorrectness) {
-      statusEl.textContent = 'Please select a correctness rating.';
-      statusEl.className = 'feedback-status error';
-      return;
-    }
-    if (!feedback.selectedLength) {
-      statusEl.textContent = 'Please select a length rating.';
-      statusEl.className = 'feedback-status error';
-      return;
-    }
-
-    const payload = {
-      message_id:    feedback.currentMessageId,
-      session_id:    app.currentSessionId,
-      rating:        feedback.selectedRating,
-      correctness:   feedback.selectedCorrectness,
-      length_rating: feedback.selectedLength,
-      comment:       document.getElementById('feedback-comment').value.trim() || null,
-    };
-
-    try {
-      await api.submitFeedback(payload);
-      statusEl.textContent = '✅ Feedback saved. Thank you!';
-      statusEl.className = 'feedback-status';
-      setTimeout(feedback.close, 1500);
-    } catch (err) {
-      statusEl.textContent = `❌ ${err.message}`;
-      statusEl.className = 'feedback-status error';
-    }
+    const sessionParam = app.currentSessionId ? `&session_id=${encodeURIComponent(app.currentSessionId)}` : '';
+    window.location.href = `/feedback?message_id=${encodeURIComponent(messageId)}${sessionParam}`;
   },
 };
 
@@ -478,6 +383,33 @@ const app = {
       document.getElementById('sidebar').classList.toggle('collapsed');
     });
 
+    // Logout feedback modal
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', app.handleLogoutPrompt);
+    }
+
+    document.querySelectorAll('#logout-star-rating .star').forEach(star => {
+      star.addEventListener('click', () => {
+        app.setLogoutRating(parseInt(star.dataset.value, 10));
+      });
+    });
+
+    const logoutSubmit = document.getElementById('logout-submit-feedback');
+    if (logoutSubmit) {
+      logoutSubmit.addEventListener('click', app.handleLogoutSubmit);
+    }
+
+    const logoutSkip = document.getElementById('logout-skip');
+    if (logoutSkip) {
+      logoutSkip.addEventListener('click', app.handleLogoutSkip);
+    }
+
+    const logoutClose = document.getElementById('logout-modal-close');
+    if (logoutClose) {
+      logoutClose.addEventListener('click', app.closeLogoutModal);
+    }
+
     // Tab switching (Chats / Analytics)
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -485,34 +417,79 @@ const app = {
       });
     });
 
-    // Star rating clicks
-    document.querySelectorAll('.star').forEach(star => {
-      star.addEventListener('click', () => feedback.setRating(parseInt(star.dataset.value)));
-    });
-
-    // Toggle buttons (correctness + length)
-    document.querySelectorAll('#correctness-group .toggle-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#correctness-group .toggle-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        feedback.selectedCorrectness = btn.dataset.value;
-      });
-    });
-    document.querySelectorAll('#length-group .toggle-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#length-group .toggle-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        feedback.selectedLength = btn.dataset.value;
-      });
-    });
-
-    // Feedback submit / close
-    document.getElementById('btn-submit-feedback').addEventListener('click', async () => {
-      await feedback.submit();
-      analytics.reload(); // refresh charts after feedback
-    });
-    document.getElementById('btn-close-feedback').addEventListener('click', feedback.close);
   },
+
+  getLastAssistantMessageId() {
+    const lastAssistant = Array.from(document.querySelectorAll('.message.assistant')).pop();
+    return lastAssistant?.dataset?.msgId || null;
+  },
+
+  openLogoutModal() {
+    const modal = document.getElementById('logout-feedback-modal');
+    if (!modal) return;
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    app.setLogoutRating(0);
+    document.getElementById('logout-feedback-comment').value = '';
+    document.getElementById('logout-feedback-status').textContent = '';
+  },
+
+  closeLogoutModal() {
+    const modal = document.getElementById('logout-feedback-modal');
+    if (!modal) return;
+    modal.classList.remove('visible');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  },
+
+  setLogoutRating(value) {
+    app.logoutRating = value;
+    document.querySelectorAll('#logout-star-rating .star').forEach(star => {
+      star.classList.toggle('active', parseInt(star.dataset.value, 10) <= value);
+    });
+  },
+
+  async handleLogoutPrompt(event) {
+    event.preventDefault();
+    app.openLogoutModal();
+  },
+
+  async handleLogoutSubmit() {
+    const statusEl = document.getElementById('logout-feedback-status');
+    statusEl.textContent = '';
+    statusEl.className = 'feedback-status';
+
+    if (!app.logoutRating) {
+      statusEl.textContent = 'Please select a rating before submitting.';
+      statusEl.className = 'feedback-status error';
+      return;
+    }
+
+    const payload = {
+      rating: app.logoutRating,
+      comment: document.getElementById('logout-feedback-comment').value.trim() || null,
+    };
+
+    try {
+      await api.submitLogoutFeedback(payload);
+      statusEl.textContent = '✅ Thanks for your feedback. Logging out…';
+      statusEl.className = 'feedback-status';
+      setTimeout(() => {
+        window.location.href = '/auth/logout';
+      }, 550);
+    } catch (err) {
+      statusEl.textContent = `❌ ${err.message}`;
+      statusEl.className = 'feedback-status error';
+    }
+  },
+
+  handleLogoutSkip(event) {
+    event.preventDefault();
+    window.location.href = '/auth/logout';
+  },
+
+  logoutRating: 0,
 
   /** Auto-grow textarea as user types */
   autoResizeInput() {
@@ -628,7 +605,6 @@ const app = {
       </div>
     `;
     ui.setTitle('New Chat');
-    feedback.close();
     document.getElementById('message-input').focus();
     document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
   },

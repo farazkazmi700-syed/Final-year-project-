@@ -21,24 +21,14 @@
     <button class="btn-icon" id="btn-new-chat" title="New Chat">＋</button>
   </div>
 
-  <!-- Tab switcher: Chats | Analytics -->
-  <div class="sidebar-tabs">
-    <button class="tab-btn active" data-tab="chats">💬 Chats</button>
-    <button class="tab-btn"        data-tab="analytics">📊 Analytics</button>
+  <!-- File menu bar for separate pages -->
+  <div class="sidebar-menu">
+    <a class="menu-item active" href="/chat">💬 Chat</a>
+    <a class="menu-item" href="/analytics">📊 Analytics</a>
   </div>
 
-  <!-- ── Chats tab ──────────────────────────────────────────────────── -->
-  <div class="tab-panel active" id="tab-chats">
-    <div class="session-list" id="session-list">
-      <div class="empty-sessions">No chats yet. Start a new one!</div>
-    </div>
-  </div>
-
-  <!-- ── Analytics tab ─────────────────────────────────────────────── -->
-  <div class="tab-panel" id="tab-analytics">
-    <div class="analytics-panel" id="analytics-panel">
-      <div class="loading-spinner">Loading analytics...</div>
-    </div>
+  <div class="session-list" id="session-list">
+    <div class="empty-sessions">No chats yet. Start a new one!</div>
   </div>
 
   <!-- User profile at bottom of sidebar -->
@@ -52,17 +42,11 @@
         <span class="user-email">{{ user.get('email', '') }}</span>
       </div>
     </div>
-    <a href="/auth/logout" class="btn-logout" title="Logout">⏏</a>
+    <a href="/auth/logout" class="btn-logout" id="btn-logout" title="Logout">⏏</a>
   </div>
-
 </aside>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     MAIN CHAT AREA
-══════════════════════════════════════════════════════════════════════════════ -->
 <main class="chat-main">
-
-  <!-- Header bar -->
   <header class="chat-header">
     <button class="btn-icon" id="btn-sidebar-toggle" title="Toggle sidebar">☰</button>
     <div class="chat-title">
@@ -90,56 +74,6 @@
     </div>
   </div>
 
-  <!-- ── Feedback panel (appears below the last AI message) ─────────── -->
-  <div class="feedback-panel" id="feedback-panel" style="display:none;">
-    <div class="feedback-header">
-      <span>Rate this response</span>
-      <button class="btn-icon btn-close-feedback" id="btn-close-feedback">✕</button>
-    </div>
-
-    <!-- Star rating -->
-    <div class="feedback-row">
-      <label>Rating:</label>
-      <div class="star-rating" id="star-rating">
-        <span class="star" data-value="1">★</span>
-        <span class="star" data-value="2">★</span>
-        <span class="star" data-value="3">★</span>
-        <span class="star" data-value="4">★</span>
-        <span class="star" data-value="5">★</span>
-      </div>
-    </div>
-
-    <!-- Correctness -->
-    <div class="feedback-row">
-      <label>Correctness:</label>
-      <div class="btn-group" id="correctness-group">
-        <button class="toggle-btn" data-value="correct">✅ Correct</button>
-        <button class="toggle-btn" data-value="partially_correct">⚠️ Partial</button>
-        <button class="toggle-btn" data-value="incorrect">❌ Wrong</button>
-      </div>
-    </div>
-
-    <!-- Length -->
-    <div class="feedback-row">
-      <label>Length:</label>
-      <div class="btn-group" id="length-group">
-        <button class="toggle-btn" data-value="too_short">Too Short</button>
-        <button class="toggle-btn" data-value="just_right">Just Right</button>
-        <button class="toggle-btn" data-value="too_long">Too Long</button>
-      </div>
-    </div>
-
-    <!-- Optional comment -->
-    <div class="feedback-row">
-      <textarea id="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
-    </div>
-
-    <button class="btn-primary btn-submit-feedback" id="btn-submit-feedback">
-      Submit Feedback
-    </button>
-    <div class="feedback-status" id="feedback-status"></div>
-  </div>
-
   <!-- ── Message input bar ────────────────────────────────────────────── -->
   <div class="input-area">
     <div class="input-wrapper">
@@ -160,6 +94,31 @@
   </div>
 
 </main>
+
+<div class="modal-overlay" id="logout-feedback-modal" aria-hidden="true">
+  <div class="modal-panel">
+    <button class="modal-close" id="logout-modal-close" aria-label="Close">✕</button>
+    <div class="modal-header">
+      <h2>Before you go...</h2>
+      <p>Rate your chat experience and submit optional feedback, or skip for now.</p>
+    </div>
+    <div class="logout-feedback-body">
+      <div class="star-rating" id="logout-star-rating">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+      <textarea id="logout-feedback-comment" placeholder="Optional comment..." rows="3"></textarea>
+      <div class="logout-feedback-actions">
+        <button class="btn-primary" id="logout-submit-feedback">Submit Feedback</button>
+        <button class="btn-icon" id="logout-skip">Skip & Logout</button>
+      </div>
+      <div class="feedback-status" id="logout-feedback-status"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Hidden data passed from Flask to JS -->
 <script>

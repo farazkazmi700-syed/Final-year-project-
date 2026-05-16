@@ -122,10 +122,22 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS logout_feedback (
+                id            TEXT PRIMARY KEY,
+                user_id       TEXT NOT NULL,
+                rating        INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+                comment       TEXT,
+                submitted_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
         # ── Indexes for fast queries ───────────────────────────────────────────
         conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_user    ON messages(user_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user    ON sessions(user_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_message ON feedback(message_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_logout_feedback_user ON logout_feedback(user_id)")
 
     print(f"[DB] ✅ SQLite database initialized at: {Config.DATABASE_PATH}")

@@ -87,19 +87,75 @@ def list_feedback():
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    with get_db() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, message_id, session_id, rating,
-                   correctness, length_rating, comment, submitted_at
-            FROM feedback
-            WHERE user_id = ?
-            ORDER BY submitted_at DESC
-            """,
-            (user['sub'],)
-        ).fetchall()
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, message_id, session_id, rating,
+                       correctness, length_rating, comment, submitted_at
+                FROM feedback
+                WHERE user_id = ?
+                ORDER BY submitted_at DESC
+                """,
+                (user['sub'],)
+            ).fetchall()
 
-    return jsonify({'feedback': [dict(row) for row in rows]})
+            logout_rows = conn.execute(
+                """
+                SELECT id, rating, comment, submitted_at
+                FROM logout_feedback
+                WHERE user_id = ?
+                ORDER BY submitted_at DESC
+                """,
+                (user['sub'],)
+            ).fetchall()
+    except Exception as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+    return jsonify({
+        'feedback': [dict(row) for row in rows],
+        'logout_feedback': [dict(row) for row in logout_rows],
+    })
+
+
+@feedback_bp.route('/logout', methods=['POST'])
+def submit_logout_feedback():
+    """
+    Save a simple overall logout rating.
+
+    Request JSON:
+        { "rating": 4, "comment": "Optional note" }
+    """
+    user = get_user_from_request(request)
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'Request body must be JSON'}), 400
+
+    rating = data.get('rating')
+    if not isinstance(rating, int) or rating < 1 or rating > 5:
+        return jsonify({'error': 'rating must be an integer between 1 and 5'}), 400
+
+    comment = data.get('comment')
+    feedback_id = str(uuid.uuid4())
+    now = datetime.utcnow().isoformat()
+
+    try:
+        with get_db() as conn:
+            conn.execute(
+                """
+                INSERT INTO logout_feedback
+                    (id, user_id, rating, comment, submitted_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (feedback_id, user['sub'], rating, comment, now)
+            )
+    except Exception as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+    return jsonify({'message': 'Logout feedback saved', 'id': feedback_id}), 201
 
 
 @feedback_bp.route('')
