@@ -11,7 +11,7 @@ Routes:
 
 import uuid
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from backend.core.security import get_user_from_request
 from backend.core.database import get_db
 from backend.models.schemas import validate_feedback
@@ -100,3 +100,9 @@ def list_feedback():
         ).fetchall()
 
     return jsonify({'feedback': [dict(row) for row in rows]})
+
+
+@feedback_bp.route('')
+def feedback_page():
+    """Serve the dedicated frontend feedback page."""
+    return render_template('feedback.html')

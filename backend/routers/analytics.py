@@ -10,7 +10,7 @@ Routes:
   GET /analytics/health  → Groq API health check (JSON)
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from backend.core.security import get_user_from_request
 from backend.core.groq_client import check_groq_connection
 from backend.services.analytics_service import (
@@ -91,3 +91,9 @@ def health_check():
     result = check_groq_connection()
     status_code = 200 if result['status'] == 'ok' else 503
     return jsonify(result), status_code
+
+
+@analytics_bp.route('')
+def analytics_page():
+    """Serve the dedicated frontend analytics dashboard."""
+    return render_template('analytics.html')
